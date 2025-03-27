@@ -1,0 +1,8 @@
+ticker,buy_below,buy_above,strategy,range_low,range_high,min_rsi
+AAPL,215,,dip,,,95
+TSLA,999,,dip,,,95
+NFLX,950,,dip,,,95
+NVDA,,115,breakout,,,
+SPY,,575,breakout,,,
+QQQ,,490,breakout,,,
+AMZN,,,range,185,205,42
