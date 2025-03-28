@@ -40,19 +40,7 @@ def get_live_price(ticker):
     except:
         return None
 
-# 📉 Get intraday chart data
-def get_chart_data(ticker):
-    try:
-        bars = api.get_bars(ticker, timeframe="5Min", limit=78)
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        return df
-    except Exception as e:
-        print(f"Chart error for {ticker}: {e}")
-        return None
+
 
 # 🧠 Evaluate strategy
 def evaluate_row(row, live_price):
