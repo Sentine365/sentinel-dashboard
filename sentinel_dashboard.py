@@ -42,12 +42,12 @@ def get_chart_data(ticker):
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data}")
 
-        if data.empty:
-            print(f"❌ yfinance returned an empty DataFrame for {ticker}")
-            return None
+        # 🛠 Flatten multi-index columns if needed
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(1)
 
-        if "Close" not in data.columns:
-            print(f"❌ 'Close' column missing in data for {ticker}")
+        if data.empty or "Close" not in data.columns:
+            print(f"❌ No usable 'Close' column found for {ticker}")
             return None
 
         df = pd.DataFrame()
