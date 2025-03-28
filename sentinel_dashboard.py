@@ -39,18 +39,27 @@ def get_chart_data(ticker):
     try:
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
         if data.empty:
-            print(f"No data returned for {ticker}")
+            print(f"⛔ No data returned for {ticker}")
             return None
 
-        # Flatten multi-index columns if needed
+        # Flatten columns if multi-index
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.get_level_values(0)
 
-        print(f"➡️ Cleaned columns: {data.columns}\n")
-        
+        # Force cleanup of column names
+        data.columns = [str(col).strip() for col in data.columns]
+
+        print(f"➡️ Cleaned columns: {data.columns}")
+
+        if "Close" not in data.columns:
+            print(f"❌ 'Close' column missing for {ticker}")
+            return None
+
         df = pd.DataFrame()
         df["time"] = data.index
-        df["price"] = data["Close"] if "Close" in data.columns else None
+        df["price"] = pd.to_numeric(data["Close"], errors="coerce")
+
+        print(f"✅ Final chart data for {ticker}:\n{df.head()}")
         return df.reset_index(drop=True)
     except Exception as e:
         print(f"Chart error for {ticker}: {e}")
