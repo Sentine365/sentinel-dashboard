@@ -42,26 +42,23 @@ def get_chart_data(ticker):
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
 
-        # Fix multi-level columns if they exist
+        # Flatten multi-index columns if needed
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = [col[0] if isinstance(col, tuple) else col for col in data.columns]
 
-        print(f"➡️ Cleaned columns: {data.columns}\n")
+        print(f"➡️ Flattened columns for {ticker}: {list(data.columns)}\n")
 
-        # Try 'Close' column first, fallback to first column with float data
-        close_col = None
-        for col in data.columns:
-            if 'close' in col.lower():
-                close_col = col
-                break
+        # Try to get the Close column (case-insensitive fallback)
+        close_col = next((col for col in data.columns if col.lower() == "close"), None)
 
-        if close_col is None:
-            print(f"❌ No usable 'Close' column found for {ticker}")
+        if not close_col:
+            print(f"❌ Could not find 'Close' column for {ticker}")
             return None
 
         df = pd.DataFrame()
         df["time"] = data.index
         df["price"] = data[close_col]
+
         print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
         return df.reset_index(drop=True)
 
