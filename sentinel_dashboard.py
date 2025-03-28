@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
-import yfinance as yf
+import datetime
 import time
+import yfinance as yf
+from alpaca_trade_api.rest import REST
+from pathlib import Path  # ✅ Needed for file existence checks
 import os
 
 # ✅ PAGE CONFIG
