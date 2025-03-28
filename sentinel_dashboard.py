@@ -41,13 +41,15 @@ def get_chart_data(ticker):
         print(f"\n🔍 Downloading data for {ticker}...\n")
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
+        print(f"➡️ Raw columns: {data.columns}\n")
 
         # 🛠 Handle multi-level columns from yfinance
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.get_level_values(0)
+            print(f"✅ Flattened columns: {data.columns}\n")
 
         if data.empty or "Close" not in data.columns:
-            print(f"❌ No usable 'Close' column found for {ticker}")
+            print(f"❌ 'Close' column not found after flattening.")
             return None
 
         df = pd.DataFrame()
@@ -60,7 +62,6 @@ def get_chart_data(ticker):
     except Exception as e:
         print(f"⚠️ Chart error for {ticker}: {e}")
         return None
-
 # ⏱️ Sidebar Settings
 st.sidebar.title("⚙️ Settings")
 refresh = st.sidebar.checkbox("Auto-refresh", value=False)
