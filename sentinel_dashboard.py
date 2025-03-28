@@ -4,8 +4,7 @@ import datetime
 import time
 from alpaca_trade_api.rest import REST
 import os
-
-# 🔐 Load API Keys
+st.set_page_config(page_title="Sentinel", layout="wide")# 🔐 Load API Keys
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
@@ -114,7 +113,7 @@ def calculate_pnl(trades, live_prices):
     return pd.DataFrame(pnl_data), round(total_realized, 2), round(total_unrealized, 2)
 
 # 🚀 MAIN DASHBOARD
-st.set_page_config(page_title="Sentinel", layout="wide")
+
 st.title("🛡️ Sentinel AI Trading Dashboard")
 
 watchlist = load_watchlist()
