@@ -56,24 +56,24 @@ refresh_interval = st.sidebar.slider("Refresh Interval (sec)", 10, 300, 60)
 watchlist = load_watchlist()
 trade_log = load_trade_log()
 
-# 🧠 Watchlist Monitor
+# 📊 Watchlist Monitor
 if watchlist.empty:
     st.warning("⚠️ watchlist.csv not found.")
 else:
     st.subheader("📋 Live Strategy Monitor")
     st.dataframe(watchlist)
 
-# 📊 Chart Section
+# 📉 Chart Viewer
 with st.expander("📉 View Charts"):
     for ticker in watchlist["ticker"]:
         chart_data = get_chart_data(ticker)
         if chart_data is not None:
-            st.line_chart(data=chart_data.set_index("time")["price"], height=150, use_container_width=True)
+            st.line_chart(chart_data.set_index("time")["price"], height=150, use_container_width=True)
             st.caption(f"{ticker} — Daily Chart via yfinance")
         else:
             st.warning(f"⚠️ No chart data for {ticker}")
 
-# 📁 Trade Log Viewer
+# 📘 Trade Log Viewer
 st.subheader("🧾 Trade Log")
 if trade_log.empty:
     st.info("No trade log file found yet.")
