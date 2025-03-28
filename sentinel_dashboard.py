@@ -1,58 +1,42 @@
 import streamlit as st
 import pandas as pd
-import os
 import yfinance as yf
 import datetime
+import os
 
 # ✅ PAGE CONFIG
 st.set_page_config(page_title="Sentinel", layout="wide")
 
-# 🔐 Load API Keys (if needed for future upgrades)
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
-
-# 🔁 Auto-Refresh (Safe version)
-auto_refresh = st.sidebar.checkbox("Auto-refresh every 60 sec", value=False)
-refresh_trigger = st.sidebar.button("🔄 Manually Refresh Now")
-
-if auto_refresh:
-    st.sidebar.write("⏳ Refreshing in 60 seconds...")
-    time.sleep(60)
-    st.experimental_rerun()
-elif refresh_trigger:
-    st.experimental_rerun()
-
-# 📂 Load Watchlist
+# 🧠 Load watchlist
+@st.cache_data
 def load_watchlist():
     try:
-        df = pd.read_csv("watchlist.csv")
-        return df
-    except:
+        return pd.read_csv("watchlist.csv")
+    except FileNotFoundError:
         return pd.DataFrame()
 
-# 📉 Chart Data (YFinance fallback)
+# 📉 Get chart data using yfinance
 def get_chart_data(ticker):
     try:
-        data = yf.download(ticker, period="5d", interval="1d")
+        data = yf.download(ticker, period="5d", interval="1d", progress=False)
         if data.empty:
             print(f"No chart data for {ticker}")
             return None
         df = pd.DataFrame()
         df["time"] = data.index
         df["price"] = data["Close"]
-        print(f"📊 Chart data for {ticker}:
-{df.head()}")
+        print(f"📊 Chart data for {ticker}:")
+        print(df.head())  # Debug: View data structure
         return df.reset_index(drop=True)
     except Exception as e:
         print(f"Chart error for {ticker}: {e}")
         return None
 
-# 🚀 Load Trade Log
+# 📂 Load trade log
 def load_trade_log():
     try:
-        log = pd.read_csv("trade_log.txt")
-        return log
-    except:
+        return pd.read_csv("trade_log.txt")
+    except FileNotFoundError:
         return pd.DataFrame()
 
 # 🧠 MAIN DASHBOARD
@@ -66,23 +50,20 @@ else:
     st.subheader("📋 Live Strategy Monitor")
     st.dataframe(df)
 
-    with st.expander("📉 View Charts"):
-        for t in df["ticker"]:
-            chart_data = get_chart_data(t)
-            if chart_data is not None:
-                st.line_chart(
-                    data=chart_data.set_index("time")["price"],
-                    height=150,
-                    use_container_width=True
-                )
-                st.caption(f"{t} — Daily Chart via Yahoo Finance")
-            else:
-                st.warning(f"⚠️ No chart data for {t}")
+# 📉 Chart Viewer
+with st.expander("📉 View Charts"):
+    for ticker in df["ticker"]:
+        chart_data = get_chart_data(ticker)
+        if chart_data is not None:
+            st.line_chart(chart_data.set_index("time")["price"])
+            st.caption(f"{ticker} — Daily Chart via yFinance")
+        else:
+            st.warning(f"⚠️ No chart data for {ticker}")
 
-# 📜 Trade Log Viewer
-log = load_trade_log()
-st.subheader("📘 Trade Log")
-if log.empty:
+# 📜 Trade History
+st.subheader("📜 Trade Log")
+trade_log = load_trade_log()
+if trade_log.empty:
     st.info("No trade log file found yet.")
 else:
-    st.dataframe(log)
+    st.dataframe(trade_log)
