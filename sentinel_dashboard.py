@@ -96,7 +96,8 @@ with st.expander("📉 View Charts"):
             )
             st.caption(f"{t} — 1D Intraday Chart")
         else:
-            st.warning(f"⚠️ No chart data for {t}")    prices = []
+            st.warning(f"⚠️ No chart data for {t}")    
+            prices = []
     status = []
     notes = []
 
