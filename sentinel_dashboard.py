@@ -4,11 +4,16 @@ import datetime
 import time
 from alpaca_trade_api.rest import REST
 import os
-st.set_page_config(page_title="Sentinel", layout="wide")# 🔐 Load API Keys
+
+# ✅ PAGE CONFIG
+st.set_page_config(page_title="Sentinel", layout="wide")
+
+# 🔐 Load API Keys
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 api = REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, base_url=ALPACA_BASE_URL, api_version="v2", raw_data=True)
+
 # ⚙️ Auto-refresh toggle
 if "auto_refresh" not in st.session_state:
     st.session_state.auto_refresh = False
@@ -39,30 +44,7 @@ def get_live_price(ticker):
     except:
         return None
 
-# 📉 Chart debug — see exactly what Alpaca returns
-def get_chart_data(ticker):
-    try:
-        bars = api.get_bars(ticker, timeframe="1Day", limit=5)
-        print(f"Bars for {ticker}: {bars}")
-        if not bars:
-            print("No bars returned.")
-            return None
-    except Exception as e:
-        print(f"Chart error: {e}")
-        return None
-
-    try:
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        print(df.head())  # See what we're working with
-        return df
-    except Exception as e:
-        print(f"DF conversion error: {e}")
-        return None
-        # 📉 Get chart data with auto-switch fallback (5Min → 1Day)
+# 📉 Get chart data with auto-switch fallback (5Min → 1Day)
 def get_chart_data(ticker):
     try:
         bars = api.get_bars(ticker, timeframe="5Min", limit=78)
@@ -85,30 +67,8 @@ def get_chart_data(ticker):
         return df
     except Exception as e:
         print(f"Final chart error for {ticker}: {e}")
-        return None    
-        
-            try:
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        print(df.head())  # Confirm structure
-        return df
-    except Exception as e:
-        print(f"Final chart error for {ticker}: {e}")
-        return None    
-        
-        try:
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        return df
-    except Exception as e:
-        print(f"Final chart error for {ticker}: {e}")
         return None
+
 # 🧠 Evaluate strategy
 def evaluate_row(row, live_price):
     reason = "Holding"
@@ -168,7 +128,6 @@ def calculate_pnl(trades, live_prices):
     return pd.DataFrame(pnl_data), round(total_realized, 2), round(total_unrealized, 2)
 
 # 🚀 MAIN DASHBOARD
-
 st.title("🛡️ Sentinel AI Trading Dashboard")
 
 watchlist = load_watchlist()
@@ -204,7 +163,7 @@ if not watchlist.empty:
     st.subheader("📋 Live Strategy Monitor")
     st.dataframe(watchlist.style.apply(color_row, axis=1), use_container_width=True)
 
-# 📉 Chart Display (Test AAPL Only)
+# 📉 Chart Display (Test AAPL only)
 with st.expander("📉 View Charts"):
     chart_data = get_chart_data("AAPL")
     if chart_data is not None:
@@ -216,6 +175,7 @@ with st.expander("📉 View Charts"):
         st.caption("AAPL — Test Chart")
     else:
         st.warning("⚠️ No chart data for AAPL")
+
 # 💹 PnL Summary
 if not trades.empty:
     st.subheader("💰 Position Summary")
