@@ -40,19 +40,29 @@ def get_live_price(ticker):
     except:
         return None
 
-# 📉 Get chart data with auto-switch fallback (5Min → 1Day)
+# 📉 Chart debug — see exactly what Alpaca returns
 def get_chart_data(ticker):
     try:
-        bars = api.get_bars(ticker, timeframe="5Min", limit=78)
+        bars = api.get_bars(ticker, timeframe="1Day", limit=5)
+        print(f"Bars for {ticker}: {bars}")
         if not bars:
-            raise Exception("No intraday data, falling back to daily")
-    except:
-        try:
-            bars = api.get_bars(ticker, timeframe="1Day", limit=5)
-        except Exception as e:
-            print(f"Chart fallback error for {ticker}: {e}")
+            print("No bars returned.")
             return None
+    except Exception as e:
+        print(f"Chart error: {e}")
+        return None
 
+    try:
+        df = pd.DataFrame([{
+            "time": b.t,
+            "price": b.c
+        } for b in bars])
+        df["time"] = pd.to_datetime(df["time"])
+        print(df.head())  # See what we're working with
+        return df
+    except Exception as e:
+        print(f"DF conversion error: {e}")
+        return None
     try:
         df = pd.DataFrame([{
             "time": b.t,
