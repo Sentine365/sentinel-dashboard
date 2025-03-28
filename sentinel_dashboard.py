@@ -4,23 +4,12 @@ import datetime
 import time
 import yfinance as yf
 from alpaca_trade_api.rest import REST
-from pathlib import Path  # ✅ Needed for file existence checks
+from pathlib import Path
 import os
 
 # ✅ PAGE CONFIG
 st.set_page_config(page_title="Sentinel", layout="wide")
 
-import pytz
-
-# 🕒 Show current time and timezone
-now_utc = datetime.datetime.now(datetime.timezone.utc)
-now_local = datetime.datetime.now()
-
-st.sidebar.markdown("#### ⏰ Server Time (UTC):")
-st.sidebar.code(now_utc.strftime("%Y-%m-%d %H:%M:%S %Z"))
-
-st.sidebar.markdown("#### 🏠 Local Python Time:")
-st.sidebar.code(now_local.strftime("%Y-%m-%d %H:%M:%S %Z"))
 # 🔐 Load API Keys
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
@@ -44,7 +33,6 @@ def load_trade_log():
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
     return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
-
 trade_log = load_trade_log()
 
 # 📊 Chart Data
