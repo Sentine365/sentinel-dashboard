@@ -45,23 +45,28 @@ def get_chart_data(ticker):
             print(f"⚠️ No data received for {ticker}")
             return None
 
-        # Flatten column headers if it's a MultiIndex
+        # Handle MultiIndex columns by flattening them
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [col[0] for col in data.columns]
-            print(f"➡️ Flattened columns: {data.columns}")
+            data.columns = [' '.join(col).strip() for col in data.columns.values]
+            print(f"➡️ Flattened MultiIndex columns: {data.columns}")
 
-        # Check what columns we have
-        print(f"📦 Raw yfinance columns for {ticker}:\n{data.columns}")
+        # Try fallback column access
+        close_column = [col for col in data.columns if 'close' in col.lower()]
+        print(f"🧪 Possible close columns: {close_column}")
 
-        if "Close" not in data.columns:
-            print(f"❌ No 'Close' column found for {ticker}")
+        if not close_column:
+            print(f"❌ Could not find a usable 'Close' column for {ticker}")
             return None
 
         df = pd.DataFrame()
         df["time"] = data.index
-        df["price"] = data["Close"]
+        df["price"] = data[close_column[0]]
+
+        # Show first few rows to verify values
         print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
+
         return df.reset_index(drop=True)
+
     except Exception as e:
         print(f"Chart error for {ticker}: {e}")
         return None
