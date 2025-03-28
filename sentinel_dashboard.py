@@ -33,6 +33,7 @@ def load_trade_log():
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
     return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
+
 trade_log = load_trade_log()
 
 # 📊 Chart Data
