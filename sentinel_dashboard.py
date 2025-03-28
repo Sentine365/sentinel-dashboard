@@ -46,6 +46,7 @@ def get_chart_data(ticker):
         # 🛠 Handle multi-level columns from yfinance
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.get_level_values(0)
+            data.columns.name = None  # ✅ Reset the index name!
             print(f"✅ Flattened columns: {data.columns}\n")
 
         if data.empty or "Close" not in data.columns:
