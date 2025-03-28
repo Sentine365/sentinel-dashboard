@@ -36,32 +36,30 @@ def load_trade_log():
 trade_log = load_trade_log()
 
 # 📊 Chart Data
-def get_chart_data(ticker):
-    try:
-        print(f"\n🔍 Downloading data for {ticker}...\n")
-        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
-        print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
+with tab3:
+    st.subheader("Price Charts (Test Mode)")
 
-        # Manually flatten multi-index columns
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
+    import numpy as np
 
-        print(f"➡️ Cleaned columns: {data.columns}\n")
+    # 🧪 Dummy chart test
+    dates = pd.date_range(end=pd.Timestamp.today(), periods=5)
+    dummy_data = pd.DataFrame({
+        "time": dates,
+        "price": [150, 153, 149, 155, 157]
+    })
 
-        # Forcefully access 'Close' (capitalized)
-        if "Close" in data.columns:
-            df = pd.DataFrame()
-            df["time"] = data.index
-            df["price"] = data["Close"]
-            print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
-            return df.reset_index(drop=True)
+    st.write("🔧 Displaying dummy chart for testing:")
+    st.line_chart(dummy_data.set_index("time")["price"])
+
+    st.markdown("---")
+    st.subheader("Live Chart Data (Real Stocks)")
+
+    for ticker in watchlist["ticker"]:
+        df = get_chart_data(ticker)
+        if df is not None and not df["price"].isna().all():
+            st.line_chart(df.set_index("time")["price"])
         else:
-            print(f"❌ 'Close' column missing after cleaning for {ticker}")
-            return None
-
-    except Exception as e:
-        print(f"Chart error for {ticker}: {e}")
-        return None
+            st.warning(f"No chart data available for {ticker}")
 # ⏱️ Sidebar Settings
 st.sidebar.title("⚙️ Settings")
 refresh = st.sidebar.checkbox("Auto-refresh", value=False)
