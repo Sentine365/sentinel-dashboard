@@ -49,8 +49,7 @@ refresh_interval = st.sidebar.slider("Refresh every (seconds)", 10, 60, 30)
 # 🔁 Refresh logic
 if refresh:
     time.sleep(refresh_interval)
-    st.experimental_rerun()
-
+   st.rerun()
 # 🧠 MAIN DASHBOARD
 st.title("🛡️ Sentinel Trading Dashboard")
 df = load_watchlist()
