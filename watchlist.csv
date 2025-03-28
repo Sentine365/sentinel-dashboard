@@ -1,8 +1,8 @@
-ticker,strategy,min_rsi
-AAPL,dip,30
-TSLA,dip,28
-NFLX,dip,32
-NVDA,dip,30
-SPY,dip,33
-QQQ,dip,33
-AMZN,dip,31
+ticker,strategy,min_rsi,buy_below,buy_above,range_low,range_high
+AAPL,dip,30,172,,,
+TSLA,dip,32,195,,,
+NFLX,dip,30,550,,,
+NVDA,breakout,,,"895",,
+SPY,range,,,"",510,530
+QQQ,range,,,"",420,435
+AMZN,breakout,,,"185",,
