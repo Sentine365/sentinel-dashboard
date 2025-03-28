@@ -40,11 +40,11 @@ def get_chart_data(ticker):
     try:
         print(f"\n🔍 Downloading data for {ticker}...\n")
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
-        print(f"\n📦 Raw yfinance data for {ticker}:\n{data}")
+        print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
 
-        # 🛠 Flatten multi-index columns if needed
+        # 🛠 Handle multi-level columns from yfinance
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(1)
+            data.columns = data.columns.get_level_values(0)
 
         if data.empty or "Close" not in data.columns:
             print(f"❌ No usable 'Close' column found for {ticker}")
@@ -54,7 +54,7 @@ def get_chart_data(ticker):
         df["time"] = data.index
         df["price"] = data["Close"]
 
-        print(f"\n✅ Cleaned chart data for {ticker}:\n{df.head()}")
+        print(f"\n✅ Final chart data for {ticker}:\n{df.head()}")
         return df.reset_index(drop=True)
 
     except Exception as e:
