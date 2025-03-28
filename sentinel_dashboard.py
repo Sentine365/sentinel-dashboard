@@ -84,8 +84,19 @@ if df.empty:
     st.warning("⚠️ watchlist.csv not found.")
 else:
     st.subheader("📋 Watchlist Status (Live)")
-
-    prices = []
+# 📉 Chart Display
+with st.expander("📉 View Charts"):
+    for t in df["ticker"]:
+        chart_data = get_chart_data(t)
+        if chart_data is not None:
+            st.line_chart(
+                data=chart_data.set_index("time")["price"],
+                height=150,
+                use_container_width=True
+            )
+            st.caption(f"{t} — 1D Intraday Chart")
+        else:
+            st.warning(f"⚠️ No chart data for {t}")    prices = []
     status = []
     notes = []
 
