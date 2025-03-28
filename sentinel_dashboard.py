@@ -45,20 +45,21 @@ def get_live_price(ticker):
     except:
         return None
 
-# 📉 Get chart data using yfinance
+# 📉 Get chart data using yfinance (with debug output)
 def get_chart_data(ticker):
     try:
         data = yf.download(ticker, period="5d", interval="1d")
         if data.empty:
+            print(f"No chart data for {ticker}")
             return None
         df = pd.DataFrame()
         df["time"] = data.index
         df["price"] = data["Close"]
+        print(f"\n📊 Chart data for {ticker}:\n{df.head()}\n")  # <-- Shows up in logs
         return df.reset_index(drop=True)
     except Exception as e:
         print(f"Chart error for {ticker}: {e}")
         return None
-
 # 🧠 Evaluate strategy
 def evaluate_row(row, live_price):
     reason = "Holding"
