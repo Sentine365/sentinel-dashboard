@@ -16,7 +16,7 @@ api = REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL)
 
 # 📁 Load Watchlist
 def load_watchlist():
-    try:
+    
         return pd.read_csv("watchlist.csv")
     except Exception as e:
         print(f"⚠️ Failed to load watchlist: {e}")
