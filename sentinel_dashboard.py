@@ -40,8 +40,29 @@ def get_live_price(ticker):
     except:
         return None
 
+# 📉 Get chart data with auto-switch fallback (5Min → 1Day)
+def get_chart_data(ticker):
+    try:
+        bars = api.get_bars(ticker, timeframe="5Min", limit=78)
+        if not bars:
+            raise Exception("No intraday data, falling back to daily")
+    except:
+        try:
+            bars = api.get_bars(ticker, timeframe="1Day", limit=5)
+        except Exception as e:
+            print(f"Chart fallback error for {ticker}: {e}")
+            return None
 
-
+    try:
+        df = pd.DataFrame([{
+            "time": b.t,
+            "price": b.c
+        } for b in bars])
+        df["time"] = pd.to_datetime(df["time"])
+        return df
+    except Exception as e:
+        print(f"Final chart error for {ticker}: {e}")
+        return None
 # 🧠 Evaluate strategy
 def evaluate_row(row, live_price):
     reason = "Holding"
