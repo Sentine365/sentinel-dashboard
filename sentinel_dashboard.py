@@ -42,16 +42,19 @@ def get_chart_data(ticker):
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
 
-        # 🛠 Fix MultiIndex columns
+        # 🧼 Flatten column levels & remove column index name
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)  # Take the first level
-        data.columns.name = None  # ✅ Fully reset the column index name
+            data.columns = data.columns.get_level_values(0)
+        data.columns.name = None  # 🔥 Clear column index name
 
         print(f"➡️ Cleaned columns: {data.columns}\n")
 
         if data.empty or "Close" not in data.columns:
             print(f"❌ 'Close' column not found.")
             return None
+
+        # 💥 Force numeric to avoid weird types
+        data["Close"] = pd.to_numeric(data["Close"], errors="coerce")
 
         df = pd.DataFrame()
         df["time"] = data.index
