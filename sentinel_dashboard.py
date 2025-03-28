@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 import datetime
 import time
-import yfinance as yf
-from pathlib import Path
 import os
+from pathlib import Path
 
 # ✅ PAGE CONFIG
 st.set_page_config(page_title="Sentinel", layout="wide")
 
-# 🔐 Load API Keys
+# 🔐 Load API Keys (optional for other modules)
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
 
@@ -33,37 +32,6 @@ def load_trade_log():
             return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
     return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
 trade_log = load_trade_log()
-
-# 📊 Chart Data Function
-def get_chart_data(ticker):
-    try:
-        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
-        if data.empty:
-            print(f"⛔ No data returned for {ticker}")
-            return None
-
-        # Flatten columns if multi-index
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-
-        # Force cleanup of column names
-        data.columns = [str(col).strip() for col in data.columns]
-
-        print(f"➡️ Cleaned columns: {data.columns}")
-
-        if "Close" not in data.columns:
-            print(f"❌ 'Close' column missing for {ticker}")
-            return None
-
-        df = pd.DataFrame()
-        df["time"] = data.index
-        df["price"] = pd.to_numeric(data["Close"], errors="coerce")
-
-        print(f"✅ Final chart data for {ticker}:\n{df.head()}")
-        return df.reset_index(drop=True)
-    except Exception as e:
-        print(f"Chart error for {ticker}: {e}")
-        return None
 
 # ⏱️ Sidebar Settings
 st.sidebar.title("⚙️ Settings")
@@ -89,26 +57,10 @@ with tab2:
     st.dataframe(trade_log)
 
 with tab3:
-    st.subheader("Price Charts (Test Mode)")
-
-    import numpy as np
-
-    # 🧪 Dummy chart test
-    dates = pd.date_range(end=pd.Timestamp.today(), periods=5)
-    dummy_data = pd.DataFrame({
-        "time": dates,
-        "price": [150, 153, 149, 155, 157]
-    })
-
-    st.write("🔧 Displaying dummy chart for testing:")
-    st.line_chart(dummy_data.set_index("time")["price"])
-
-    st.markdown("---")
-    st.subheader("Live Chart Data (Real Stocks)")
-
+    st.subheader("TradingView Charts")
     for ticker in watchlist["ticker"]:
-        df = get_chart_data(ticker)
-        if df is not None and not df["price"].isna().all():
-            st.line_chart(df.set_index("time")["price"])
-        else:
-            st.warning(f"No chart data available for {ticker}")
+        st.markdown(f"**{ticker}**")
+        st.components.v1.html(f"""
+            <iframe src="https://www.tradingview.com/embed-widget/mini-symbol-overview/?symbol={ticker}" 
+                    width="100%" height="300" frameborder="0"></iframe>
+        """, height=310)
