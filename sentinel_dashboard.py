@@ -85,7 +85,9 @@ def get_chart_data(ticker):
         return df
     except Exception as e:
         print(f"Final chart error for {ticker}: {e}")
-        return None    try:
+        return None    
+        
+        try:
         df = pd.DataFrame([{
             "time": b.t,
             "price": b.c
