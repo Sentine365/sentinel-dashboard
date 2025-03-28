@@ -1,41 +1,61 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import time
 from alpaca_trade_api.rest import REST
 import os
-import time
 
-# Session state for refresh toggle
-if "auto_refresh" not in st.session_state:
-    st.session_state.auto_refresh = False
-
-# Sidebar toggle for auto-refresh
-st.sidebar.title("⚙️ Settings")
-refresh = st.sidebar.checkbox("🔁 Auto-Refresh", value=st.session_state.auto_refresh)
-st.session_state.auto_refresh = refresh# 🧠 Load API Keys
+# 🔐 Load API Keys
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
-
 api = REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, base_url=ALPACA_BASE_URL)
 
-# ⚙️ Load watchlist
+# ⚙️ Auto-refresh toggle
+if "auto_refresh" not in st.session_state:
+    st.session_state.auto_refresh = False
+
+st.sidebar.title("⚙️ Settings")
+refresh = st.sidebar.checkbox("🔁 Auto-Refresh", value=st.session_state.auto_refresh)
+st.session_state.auto_refresh = refresh
+
+# 📋 Load watchlist
 def load_watchlist():
     try:
-        df = pd.read_csv("watchlist.csv")
-        return df
+        return pd.read_csv("watchlist.csv")
     except:
         return pd.DataFrame()
+
+# 💹 Load trade log
+def load_trade_log():
+    try:
+        return pd.read_csv("trade_log.txt")
+    except:
+        return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "quantity"])
 
 # 📈 Get live price from Alpaca
 def get_live_price(ticker):
     try:
-        barset = api.get_latest_trade(ticker)
-        return round(barset.price, 2)
+        trade = api.get_latest_trade(ticker)
+        return round(trade.price, 2)
     except:
         return None
 
-# 🧠 Check if strategy conditions are met
+# 📉 Get intraday chart data
+def get_chart_data(ticker):
+    try:
+        bars = api.get_bars(ticker, timeframe="5Min", limit=78)
+        df = pd.DataFrame([{
+            "time": b.t,
+            "price": b.c
+        } for b in bars])
+        df["time"] = pd.to_datetime(df["time"])
+        return df
+    except Exception as e:
+        print(f"Chart error for {ticker}: {e}")
+        return None
+
+# 🧠 Evaluate strategy
 def evaluate_row(row, live_price):
     reason = "Holding"
     status = "⚪"
@@ -56,83 +76,111 @@ def evaluate_row(row, live_price):
 
     return pd.Series([status, reason])
 
-# 🧾 Load trade log
-def load_log():
-    try:
-        with open("trade_log.txt", "r") as file:
-            return file.read()
-    except:
-        return "No trade log found yet."
-# 📉 Get intraday chart data (1D, 5-minute bars)
-def get_chart_data(ticker):
-    try:
-        bars = api.get_bars(ticker, timeframe="5Min", limit=78)  # roughly 1 day
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        return df
-    except Exception as e:
-        print(f"Chart error for {ticker}: {e}")
-        return None# 🧠 MAIN DASHBOARD
-st.title("🛡️ Sentinel Trading Dashboard")
+# 💰 Calculate PnL
+def calculate_pnl(trades, live_prices):
+    pnl_data = []
+    total_realized = 0
+    total_unrealized = 0
 
-df = load_watchlist()
+    for ticker in trades["ticker"].unique():
+        t = trades[trades["ticker"] == ticker]
+        buys = t[t["action"] == "buy"]
+        sells = t[t["action"] == "sell"]
 
-if df.empty:
-    st.warning("⚠️ watchlist.csv not found.")
-else:
-    st.subheader("📋 Watchlist Status (Live)")
-st.dataframe(df.style.apply(color_row, axis=1), use_container_width=True)
+        total_bought = buys["quantity"].sum()
+        total_sold = sells["quantity"].sum()
 
-with st.expander("📉 View Charts"):
-    for t in df["ticker"]:        chart_data = get_chart_data(t)
-        if chart_data is not None:
-            st.line_chart(
-                data=chart_data.set_index("time")["price"],
-                height=150,
-                use_container_width=True
-            )
-            st.caption(f"{t} — 1D Intraday Chart")
-        else:
-            st.warning(f"⚠️ No chart data for {t}")    
-            prices = []
-    status = []
-    notes = []
+        avg_buy_price = (buys["price"] * buys["quantity"]).sum() / total_bought if total_bought > 0 else 0
+        avg_sell_price = (sells["price"] * sells["quantity"]).sum() / total_sold if total_sold > 0 else 0
 
-    for _, row in df.iterrows():
-        ticker = row["ticker"]
-        live_price = get_live_price(ticker)
-        prices.append(live_price)
+        realized = (avg_sell_price - avg_buy_price) * min(total_bought, total_sold)
 
-        s, note = evaluate_row(row, live_price)
+        remaining_qty = total_bought - total_sold
+        live_price = live_prices.get(ticker, None)
+        unrealized = (live_price - avg_buy_price) * remaining_qty if live_price and remaining_qty > 0 else 0
+
+        pnl_data.append({
+            "Ticker": ticker,
+            "Qty Open": remaining_qty,
+            "Live Price": live_price,
+            "Avg Buy": round(avg_buy_price, 2),
+            "Unrealized": round(unrealized, 2),
+            "Realized": round(realized, 2)
+        })
+
+        total_realized += realized
+        total_unrealized += unrealized
+
+    return pd.DataFrame(pnl_data), round(total_realized, 2), round(total_unrealized, 2)
+
+# 🚀 MAIN DASHBOARD
+st.set_page_config(page_title="Sentinel", layout="wide")
+st.title("🛡️ Sentinel AI Trading Dashboard")
+
+watchlist = load_watchlist()
+trades = load_trade_log()
+
+live_prices = {}
+if not watchlist.empty:
+    for t in watchlist["ticker"]:
+        live_prices[t] = get_live_price(t)
+
+# 📋 Watchlist display
+if not watchlist.empty:
+    prices, status, signal = [], [], []
+
+    for _, row in watchlist.iterrows():
+        lp = live_prices.get(row["ticker"], None)
+        prices.append(lp)
+        s, note = evaluate_row(row, lp)
         status.append(s)
-        notes.append(note)
+        signal.append(note)
 
-    df["Live Price"] = prices
-    df["Status"] = status
-    df["Signal"] = notes
+    watchlist["Live Price"] = prices
+    watchlist["Status"] = status
+    watchlist["Signal"] = signal
 
-    # Highlight rows
     def color_row(row):
         if row["Status"] == "🟢":
             return ['background-color: #d4edda'] * len(row)
         elif row["Status"] == "🔴":
             return ['background-color: #f8d7da'] * len(row)
-        else:
-            return [''] * len(row)
+        return [''] * len(row)
 
-    st.dataframe(df.style.apply(color_row, axis=1))
+    st.subheader("📋 Live Strategy Monitor")
+    st.dataframe(watchlist.style.apply(color_row, axis=1), use_container_width=True)
 
-    st.caption(f"⏱️ Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+# 📉 Chart Display
+    with st.expander("📉 View Charts"):
+        for t in watchlist["ticker"]:
+            chart_data = get_chart_data(t)
+            if chart_data is not None:
+                st.line_chart(
+                    data=chart_data.set_index("time")["price"],
+                    height=150,
+                    use_container_width=True
+                )
+                st.caption(f"{t} — 1D Intraday Chart")
+            else:
+                st.warning(f"⚠️ No chart data for {t}")
 
-st.subheader("🧾 Trade Log")
-st.text(load_log())
+# 💹 PnL Summary
+if not trades.empty:
+    st.subheader("💰 Position Summary")
+    pnl_df, realized, unrealized = calculate_pnl(trades, live_prices)
+    st.dataframe(pnl_df, use_container_width=True)
+    st.success(f"Total Realized PnL: ${realized}")
+    st.info(f"Total Unrealized PnL: ${unrealized}")
 
+# 🧾 Raw Log
+st.subheader("📜 Raw Trade Log")
+st.text(trades.to_csv(index=False))
+
+st.caption(f"⏱️ Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 st.markdown("---")
 st.caption("Made with ❤️ by you + Sentinel")
-# Auto-refresh every 60 seconds if enabled
+
+# 🔁 Auto-refresh loop
 if st.session_state.auto_refresh:
-    st.experimental_rerun()
     time.sleep(60)
+    st.experimental_rerun()
