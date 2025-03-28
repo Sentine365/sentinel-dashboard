@@ -63,8 +63,19 @@ def load_log():
             return file.read()
     except:
         return "No trade log found yet."
-
-# 🧠 MAIN DASHBOARD
+# 📉 Get intraday chart data (1D, 5-minute bars)
+def get_chart_data(ticker):
+    try:
+        bars = api.get_bars(ticker, timeframe="5Min", limit=78)  # roughly 1 day
+        df = pd.DataFrame([{
+            "time": b.t,
+            "price": b.c
+        } for b in bars])
+        df["time"] = pd.to_datetime(df["time"])
+        return df
+    except Exception as e:
+        print(f"Chart error for {ticker}: {e}")
+        return None# 🧠 MAIN DASHBOARD
 st.title("🛡️ Sentinel Trading Dashboard")
 
 df = load_watchlist()
