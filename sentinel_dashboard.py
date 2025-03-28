@@ -41,25 +41,27 @@ def get_chart_data(ticker):
         print(f"\n🔍 Downloading data for {ticker}...\n")
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
-        print(f"\n➡️ Columns: {data.columns}\n")
 
-        if data.empty:
-            print(f"❌ Data is empty for {ticker}")
-            return None
-
-        # Handle multi-level columns by flattening
+        # Fix multi-level columns if they exist
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [col[0] for col in data.columns]
+            data.columns = [col[0] if isinstance(col, tuple) else col for col in data.columns]
 
-        print(f"\n✅ Cleaned columns: {data.columns}\n")
+        print(f"➡️ Cleaned columns: {data.columns}\n")
 
-        if "Close" not in data.columns:
-            print(f"❌ No 'Close' column found for {ticker}")
+        # Try 'Close' column first, fallback to first column with float data
+        close_col = None
+        for col in data.columns:
+            if 'close' in col.lower():
+                close_col = col
+                break
+
+        if close_col is None:
+            print(f"❌ No usable 'Close' column found for {ticker}")
             return None
 
         df = pd.DataFrame()
         df["time"] = data.index
-        df["price"] = data["Close"]
+        df["price"] = data[close_col]
         print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
         return df.reset_index(drop=True)
 
