@@ -3,8 +3,16 @@ import pandas as pd
 import datetime
 from alpaca_trade_api.rest import REST
 import os
+import time
 
-# 🧠 Load API Keys
+# Session state for refresh toggle
+if "auto_refresh" not in st.session_state:
+    st.session_state.auto_refresh = False
+
+# Sidebar toggle for auto-refresh
+st.sidebar.title("⚙️ Settings")
+refresh = st.sidebar.checkbox("🔁 Auto-Refresh", value=st.session_state.auto_refresh)
+st.session_state.auto_refresh = refresh# 🧠 Load API Keys
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY") or "your_alpaca_key"
 ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY") or "your_alpaca_secret"
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
@@ -101,3 +109,7 @@ st.text(load_log())
 
 st.markdown("---")
 st.caption("Made with ❤️ by you + Sentinel")
+# Auto-refresh every 60 seconds if enabled
+if st.session_state.auto_refresh:
+    st.experimental_rerun()
+    time.sleep(60)
