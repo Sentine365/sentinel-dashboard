@@ -42,25 +42,22 @@ def get_chart_data(ticker):
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
 
-        # Flatten multi-index columns if needed
+        # Manually flatten multi-index columns
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = [col[0] if isinstance(col, tuple) else col for col in data.columns]
+            data.columns = data.columns.get_level_values(0)
 
-        print(f"➡️ Flattened columns for {ticker}: {list(data.columns)}\n")
+        print(f"➡️ Cleaned columns: {data.columns}\n")
 
-        # Try to get the Close column (case-insensitive fallback)
-        close_col = next((col for col in data.columns if col.lower() == "close"), None)
-
-        if not close_col:
-            print(f"❌ Could not find 'Close' column for {ticker}")
+        # Forcefully access 'Close' (capitalized)
+        if "Close" in data.columns:
+            df = pd.DataFrame()
+            df["time"] = data.index
+            df["price"] = data["Close"]
+            print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
+            return df.reset_index(drop=True)
+        else:
+            print(f"❌ 'Close' column missing after cleaning for {ticker}")
             return None
-
-        df = pd.DataFrame()
-        df["time"] = data.index
-        df["price"] = data[close_col]
-
-        print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
-        return df.reset_index(drop=True)
 
     except Exception as e:
         print(f"Chart error for {ticker}: {e}")
