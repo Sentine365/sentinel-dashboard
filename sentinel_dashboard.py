@@ -38,20 +38,27 @@ trade_log = load_trade_log()
 # 📊 Chart Data
 def get_chart_data(ticker):
     try:
-        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
-        print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
+        print(f"\n🔍 Downloading data for {ticker}...\n")
+        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
+        print(f"\n📦 Raw yfinance data for {ticker}:\n{data}")
 
-        if data.empty or "Close" not in data.columns:
-            print(f"No usable chart data for {ticker}")
+        if data.empty:
+            print(f"❌ yfinance returned an empty DataFrame for {ticker}")
+            return None
+
+        if "Close" not in data.columns:
+            print(f"❌ 'Close' column missing in data for {ticker}")
             return None
 
         df = pd.DataFrame()
         df["time"] = data.index
         df["price"] = data["Close"]
-        print(f"\n📊 Final chart data for {ticker}:\n{df.head()}\n")
+
+        print(f"\n✅ Cleaned chart data for {ticker}:\n{df.head()}")
         return df.reset_index(drop=True)
+
     except Exception as e:
-        print(f"Chart error for {ticker}: {e}")
+        print(f"⚠️ Chart error for {ticker}: {e}")
         return None
 
 # ⏱️ Sidebar Settings
