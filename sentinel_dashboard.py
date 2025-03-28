@@ -168,20 +168,18 @@ if not watchlist.empty:
     st.subheader("📋 Live Strategy Monitor")
     st.dataframe(watchlist.style.apply(color_row, axis=1), use_container_width=True)
 
-# 📉 Chart Display
-    with st.expander("📉 View Charts"):
-        for t in watchlist["ticker"]:
-            chart_data = get_chart_data(t)
-            if chart_data is not None:
-                st.line_chart(
-                    data=chart_data.set_index("time")["price"],
-                    height=150,
-                    use_container_width=True
-                )
-                st.caption(f"{t} — 1D Intraday Chart")
-            else:
-                st.warning(f"⚠️ No chart data for {t}")
-
+# 📉 Chart Display (Test AAPL Only)
+with st.expander("📉 View Charts"):
+    chart_data = get_chart_data("AAPL")
+    if chart_data is not None:
+        st.line_chart(
+            data=chart_data.set_index("time")["price"],
+            height=150,
+            use_container_width=True
+        )
+        st.caption("AAPL — Test Chart")
+    else:
+        st.warning("⚠️ No chart data for AAPL")
 # 💹 PnL Summary
 if not trades.empty:
     st.subheader("💰 Position Summary")
