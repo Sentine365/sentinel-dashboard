@@ -87,17 +87,19 @@ def get_chart_data(ticker):
         print(f"Final chart error for {ticker}: {e}")
         return None    
         
-        try:
+            try:
         df = pd.DataFrame([{
             "time": b.t,
             "price": b.c
         } for b in bars])
         df["time"] = pd.to_datetime(df["time"])
+        print(df.head())  # Confirm structure
         return df
     except Exception as e:
         print(f"Final chart error for {ticker}: {e}")
-        return None
-    try:
+        return None    
+        
+        try:
         df = pd.DataFrame([{
             "time": b.t,
             "price": b.c
