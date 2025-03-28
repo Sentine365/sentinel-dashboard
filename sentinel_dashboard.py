@@ -39,32 +39,31 @@ trade_log = load_trade_log()
 def get_chart_data(ticker):
     try:
         print(f"\n🔍 Downloading data for {ticker}...\n")
-        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
-        print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
+        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
 
-        # 🧼 Flatten column levels & remove column index name
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-        data.columns.name = None  # 🔥 Clear column index name
-
-        print(f"➡️ Cleaned columns: {data.columns}\n")
-
-        if data.empty or "Close" not in data.columns:
-            print(f"❌ 'Close' column not found.")
+        if data.empty:
+            print(f"⚠️ No data received for {ticker}")
             return None
 
-        # 💥 Force numeric to avoid weird types
-        data["Close"] = pd.to_numeric(data["Close"], errors="coerce")
+        # Flatten column headers if it's a MultiIndex
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = [col[0] for col in data.columns]
+            print(f"➡️ Flattened columns: {data.columns}")
+
+        # Check what columns we have
+        print(f"📦 Raw yfinance columns for {ticker}:\n{data.columns}")
+
+        if "Close" not in data.columns:
+            print(f"❌ No 'Close' column found for {ticker}")
+            return None
 
         df = pd.DataFrame()
         df["time"] = data.index
         df["price"] = data["Close"]
-
-        print(f"\n✅ Final chart data for {ticker}:\n{df.head()}")
+        print(f"\n✅ Final chart data for {ticker}:\n{df.head()}\n")
         return df.reset_index(drop=True)
-
     except Exception as e:
-        print(f"⚠️ Chart error for {ticker}: {e}")
+        print(f"Chart error for {ticker}: {e}")
         return None
 # ⏱️ Sidebar Settings
 st.sidebar.title("⚙️ Settings")
