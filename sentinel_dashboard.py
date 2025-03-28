@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import time
 import yfinance as yf
-from alpaca_trade_api.rest import REST
 from pathlib import Path
 import os
 
@@ -35,31 +34,28 @@ def load_trade_log():
     return pd.DataFrame(columns=["timestamp", "ticker", "action", "price", "qty"])
 trade_log = load_trade_log()
 
-# 📊 Chart Data
-with tab3:
-    st.subheader("Price Charts (Test Mode)")
+# 📊 Chart Data Function
+def get_chart_data(ticker):
+    try:
+        data = yf.download(ticker, period="5d", interval="1d", auto_adjust=False)
+        if data.empty:
+            print(f"No data returned for {ticker}")
+            return None
 
-    import numpy as np
+        # Flatten multi-index columns if needed
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
 
-    # 🧪 Dummy chart test
-    dates = pd.date_range(end=pd.Timestamp.today(), periods=5)
-    dummy_data = pd.DataFrame({
-        "time": dates,
-        "price": [150, 153, 149, 155, 157]
-    })
+        print(f"➡️ Cleaned columns: {data.columns}\n")
+        
+        df = pd.DataFrame()
+        df["time"] = data.index
+        df["price"] = data["Close"] if "Close" in data.columns else None
+        return df.reset_index(drop=True)
+    except Exception as e:
+        print(f"Chart error for {ticker}: {e}")
+        return None
 
-    st.write("🔧 Displaying dummy chart for testing:")
-    st.line_chart(dummy_data.set_index("time")["price"])
-
-    st.markdown("---")
-    st.subheader("Live Chart Data (Real Stocks)")
-
-    for ticker in watchlist["ticker"]:
-        df = get_chart_data(ticker)
-        if df is not None and not df["price"].isna().all():
-            st.line_chart(df.set_index("time")["price"])
-        else:
-            st.warning(f"No chart data available for {ticker}")
 # ⏱️ Sidebar Settings
 st.sidebar.title("⚙️ Settings")
 refresh = st.sidebar.checkbox("Auto-refresh", value=False)
@@ -84,7 +80,23 @@ with tab2:
     st.dataframe(trade_log)
 
 with tab3:
-    st.subheader("Price Charts")
+    st.subheader("Price Charts (Test Mode)")
+
+    import numpy as np
+
+    # 🧪 Dummy chart test
+    dates = pd.date_range(end=pd.Timestamp.today(), periods=5)
+    dummy_data = pd.DataFrame({
+        "time": dates,
+        "price": [150, 153, 149, 155, 157]
+    })
+
+    st.write("🔧 Displaying dummy chart for testing:")
+    st.line_chart(dummy_data.set_index("time")["price"])
+
+    st.markdown("---")
+    st.subheader("Live Chart Data (Real Stocks)")
+
     for ticker in watchlist["ticker"]:
         df = get_chart_data(ticker)
         if df is not None and not df["price"].isna().all():
