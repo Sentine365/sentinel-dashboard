@@ -41,16 +41,16 @@ def get_chart_data(ticker):
         print(f"\n🔍 Downloading data for {ticker}...\n")
         data = yf.download(ticker, period="5d", interval="1d", auto_adjust=True)
         print(f"\n📦 Raw yfinance data for {ticker}:\n{data.head()}\n")
-        print(f"➡️ Raw columns: {data.columns}\n")
 
-        # 🛠 Handle multi-level columns from yfinance
+        # 🛠 Fix MultiIndex columns
         if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-            data.columns.name = None  # ✅ Reset the index name!
-            print(f"✅ Flattened columns: {data.columns}\n")
+            data.columns = data.columns.get_level_values(0)  # Take the first level
+        data.columns.name = None  # ✅ Fully reset the column index name
+
+        print(f"➡️ Cleaned columns: {data.columns}\n")
 
         if data.empty or "Close" not in data.columns:
-            print(f"❌ 'Close' column not found after flattening.")
+            print(f"❌ 'Close' column not found.")
             return None
 
         df = pd.DataFrame()
