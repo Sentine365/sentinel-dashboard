@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import time
+import yfinance as yf
 from alpaca_trade_api.rest import REST
 import os
 
@@ -44,29 +45,18 @@ def get_live_price(ticker):
     except:
         return None
 
-# 📉 Get chart data with auto-switch fallback (5Min → 1Day)
+# 📉 Get chart data using yfinance
 def get_chart_data(ticker):
     try:
-        bars = api.get_bars(ticker, timeframe="5Min", limit=78)
-        if not bars:
-            raise Exception("No intraday data, falling back to daily")
-    except:
-        try:
-            bars = api.get_bars(ticker, timeframe="1Day", limit=5)
-        except Exception as e:
-            print(f"Chart fallback error for {ticker}: {e}")
+        data = yf.download(ticker, period="5d", interval="1d")
+        if data.empty:
             return None
-
-    try:
-        df = pd.DataFrame([{
-            "time": b.t,
-            "price": b.c
-        } for b in bars])
-        df["time"] = pd.to_datetime(df["time"])
-        print(df.head())  # Confirm structure
-        return df
+        df = pd.DataFrame()
+        df["time"] = data.index
+        df["price"] = data["Close"]
+        return df.reset_index(drop=True)
     except Exception as e:
-        print(f"Final chart error for {ticker}: {e}")
+        print(f"Chart error for {ticker}: {e}")
         return None
 
 # 🧠 Evaluate strategy
@@ -163,7 +153,7 @@ if not watchlist.empty:
     st.subheader("📋 Live Strategy Monitor")
     st.dataframe(watchlist.style.apply(color_row, axis=1), use_container_width=True)
 
-# 📉 Chart Display (Test AAPL only)
+# 📉 Chart Display (Test AAPL only for now)
 with st.expander("📉 View Charts"):
     chart_data = get_chart_data("AAPL")
     if chart_data is not None:
@@ -172,7 +162,7 @@ with st.expander("📉 View Charts"):
             height=150,
             use_container_width=True
         )
-        st.caption("AAPL — Test Chart")
+        st.caption("AAPL — Daily Chart via yfinance")
     else:
         st.warning("⚠️ No chart data for AAPL")
 
